@@ -1,0 +1,67 @@
+name: Doraemon 2D Render
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: |
+        pip install wandb
+
+    - name: Install Blender
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget xz-utils libgl1 libglu1-mesa libxi6 libxrender1 libxxf86vm1 libegl1 libxkbcommon0
+        wget -q https://mirrors.dotsrc.org/blender/release/Blender4.3/blender-4.3.2-linux-x64.tar.xz
+        tar -xf blender-4.3.2-linux-x64.tar.xz
+        echo "$GITHUB_WORKSPACE/blender-4.3.2-linux-x64" >> $GITHUB_PATH
+
+    - name: Run Doraemon render script
+      run: |
+        blender --background --python run_doraemon.py
+      env:
+        WANDB_MODE: offline
+
+    - name: Upload generated image
+      uses: actions/upload-artifact@v4
+      with:
+        name: doraemon-images
+        path: |
+          doraemon_2d_*.png
+          doraemon_2d.blend
+        retention-days: 30
+
+    - name: Commit and push generated image
+      if: github.event_name != 'pull_request'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        PNG_FILE=$(ls doraemon_2d_*.png 2>/dev/null | head -1)
+        if [ -n "$PNG_FILE" ]; then
+          git add "$PNG_FILE" doraemon_2d.blend
+          git commit -m "chore: auto-generate doraemon image [skip ci]" || echo "No changes to commit"
+          git push
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

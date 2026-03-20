@@ -1,0 +1,30 @@
+# Blender backup files
+*.blend1
+*.blend2
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Bun cache
+.bun/
+
+# Node modules
+node_modules/
